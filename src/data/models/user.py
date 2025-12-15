@@ -1,7 +1,8 @@
+from typing import Optional, List, Tuple, Any
 from flask_login import UserMixin
 from sqlalchemy.schema import Column
 from sqlalchemy.types import Boolean, Integer, String
-from sqlalchemy.orm import relationship,backref
+from sqlalchemy.orm import relationship, backref, Session
 
 from sqlalchemy import cast, Numeric
 
@@ -48,11 +49,13 @@ class User(CRUDModel, UserMixin):
             setattr(self, k, v)
 
     @staticmethod
-    def find_by_email(email):
+    def find_by_email(email: str) -> Optional['User']:
+        """Find user by email address"""
         return db.session.query(User).filter_by(email=email).scalar()
 
     @staticmethod
-    def find_by_username(username):
+    def find_by_username(username: str) -> Optional['User']:
+        """Find user by username"""
         return db.session.query(User).filter_by(username=username).scalar()
 
     # pylint: disable=R0201
@@ -61,79 +64,118 @@ class User(CRUDModel, UserMixin):
         raise AttributeError('password is not a readable attribute')
 
     @password.setter
-    def password(self, password):
+    def password(self, password: str) -> None:
+        """Set password hash from plain text password"""
         self.password_hash = bcrypt.generate_password_hash(password, app_config.BCRYPT_LOG_ROUNDS)
 
-    def verify_password(self, password):
+    def verify_password(self, password: str) -> bool:
+        """Verify password against stored hash"""
         return bcrypt.check_password_hash(self.password_hash, password)
 
-    def is_verified(self):
-        " Returns whether a user has verified their email "
+    def is_verified(self) -> bool:
+        """Returns whether a user has verified their email"""
         return self.verified is True
 
     @staticmethod
-    def find_by_number(card_number):
+    def find_by_number(card_number: str) -> Optional['User']:
+        """Find user by card number"""
         return db.session.query(User).filter_by(card_number=card_number).scalar()
 
     @staticmethod
-    def getID(card_number):
+    def getID(card_number: str) -> Optional[int]:
+        """Get user ID by card number"""
         return db.session.query(User.id).filter_by(card_number=card_number).scalar()
 
     @staticmethod
-    def getIDAndAccess(card_number):
+    def getIDAndAccess(card_number: str) -> Optional[Tuple[int, str]]:
+        """Get user ID and access level by card number"""
         return db.session.query(User.id, User.access).filter_by(card_number=card_number).first()
 
 
     @staticmethod
-    def access_by_group(chip,fromcte):
-        acctualtime=datetime.now()
-        dayofweek=acctualtime.weekday()
-        timenow=acctualtime.time()
-        #print calendar.day_name[dayofweek]
+    def access_by_group(chip: int, fromcte: str) -> bool:
+        """
+        Check if user has access based on group permissions
+        
+        Args:
+            chip: User's chip number
+            fromcte: MQTT topic from card reader
+            
+        Returns:
+            True if access granted, False otherwise
+        """
+        acctualtime = datetime.now()
+        dayofweek = acctualtime.weekday()
+        timenow = acctualtime.time()
 
-        chip=str(chip).zfill(10)
-        user_groups=db.session.query(Group)\
-            .filter(getattr(Group,calendar.day_name[dayofweek])== True).filter(Group.access_time_from <=timenow)\
-            .filter(Group.access_time_to>=timenow)\
-            .join(User_has_group).join(User).filter(User.chip_number.like(chip)).join(Group_has_timecard)\
-            .join(Timecard).filter(Timecard.identreader==fromcte).all()
+        chip_str = str(chip).zfill(10)
+        user_groups = db.session.query(Group)\
+            .filter(getattr(Group, calendar.day_name[dayofweek]) == True).filter(Group.access_time_from <= timenow)\
+            .filter(Group.access_time_to >= timenow)\
+            .join(User_has_group).join(User).filter(User.chip_number.like(chip_str)).join(Group_has_timecard)\
+            .join(Timecard).filter(Timecard.identreader == fromcte).all()
         if len(user_groups) > 0:
             return True
         return False
 
     @staticmethod
-    def find_by_chip(chip_number):
-        testchip=str(chip_number).zfill(10)
+    def find_by_chip(chip_number: int) -> Optional['User']:
+        """
+        Find user by chip number
+        
+        Args:
+            chip_number: Chip number to search for
+            
+        Returns:
+            User if found, None otherwise
+        """
+        testchip = str(chip_number).zfill(10)
         return db.session.query(User).filter(User.chip_number.like(testchip)).first()
 
     @staticmethod
-    def all_users():
+    def all_users() -> List[Tuple[int, str, str]]:
+        """Get all users with ID, name, and second name"""
         return db.session.query(User.id, User.name, User.second_name).all()
 
     @staticmethod
-    def all_names():
+    def all_names() -> List[Tuple[str]]:
+        """Get all user names"""
         return db.session.query(User.name).all()
 
     @staticmethod
     def ingroup():
+        """Get users in groups query"""
         return db.session.query(User.id, User.name, User.second_name)
 
     @staticmethod
-    def findUserById(id):
+    def findUserById(id: int) -> List['User']:
+        """Find users by ID"""
         return db.session.query(User).filter_by(id=id).all()
 
     @staticmethod
-    def user_in_group():
+    def user_in_group() -> List[Tuple[int, str, str, int, str]]:
+        """Get users with their group information"""
         return db.session.query(User.id, User.name, User.second_name, User_has_group.group_id, Group.group_name).join(User_has_group).join(Group).all()
 
     @staticmethod
-    def oneUserById(id):
+    def oneUserById(id: int) -> Optional[Tuple[str, str]]:
+        """Get one user's name by ID"""
         return db.session.query(User.name, User.second_name).filter_by(id=id).first()
 
     @staticmethod
-    def getName(id):
+    def getName(id: int) -> Optional[Tuple[str]]:
+        """Get user name by ID"""
         return db.session.query(User.name).filter_by(id=id).first()
 
     @staticmethod
-    def usersInSpecificGroup(id):
-        return db.session.query(User.id, User.name, User.second_name, User_has_group.group_id).join(User_has_group).filter_by(group_id = id).all()
+    def usersInSpecificGroup(id: int) -> List[Tuple[int, str, str, int]]:
+        """
+        Get users in a specific group
+        
+        Args:
+            id: Group ID
+            
+        Returns:
+            List of user tuples with ID, name, second_name, and group_id
+        """
+        return db.session.query(User.id, User.name, User.second_name, User_has_group.group_id).join(User_has_group).filter_by(group_id=id).all()

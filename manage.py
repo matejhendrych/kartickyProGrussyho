@@ -19,7 +19,7 @@ from src.util import invoke_process, parse_sqlalchemy_url
 
 def import_env():
     if os.path.exists('.env'):
-        print ('Importing environment from .env...')
+        print('Importing environment from .env...')
         for line in open('.env'):
             var = line.strip().split('=', 1)
             if len(var) == 2:
@@ -61,7 +61,7 @@ def repl(url):
     Launch a psql or sqlite3 repl connected to the database
     """
     def build_named_arglist(arg_dict):
-        for name, value in arg_dict.iteritems():
+        for name, value in arg_dict.items():
             yield "--{}".format(name)
             yield str(value)
 
@@ -102,7 +102,7 @@ def scratch():
     Usage: ./manage.py test scratch
     Run some snipper of code -- useful for quickly testing things
     """
-    print ('Moop')
+    print('Moop')
 
 if __name__ == '__main__':
     manager.run()
