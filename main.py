@@ -57,16 +57,6 @@ app.include_router(public.router, tags=["public"])
 app.include_router(services.router, prefix="/services", tags=["services"])
 
 
-# Database dependency
-def get_db():
-    """Get database session"""
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
 # Exception handlers
 @app.exception_handler(404)
 async def not_found_handler(request: Request, exc):

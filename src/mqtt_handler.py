@@ -118,47 +118,49 @@ class MQTTHandler:
             user_chip = User.find_by_chip(testchip)
             
             if not user_chip:
-                # Log unknown card
-                log = Log(
-                    time=datetime.now(),
-                    text=f"Neznama karta {code_convert(str(msg.payload))} {str(msg.payload).zfill(10)}"
-                )
-                self.db.add(log)
-                self.db.commit()
+                # Log unknown card (commit separately to avoid blocking)
+                try:
+                    log = Log(
+                        time=datetime.now(),
+                        text=f"Neznama karta {code_convert(str(msg.payload))} {str(msg.payload).zfill(10)}"
+                    )
+                    self.db.add(log)
+                    self.db.commit()
+                except Exception as e:
+                    print(f"Error logging unknown card: {e}")
+                    self.db.rollback()
             else:
                 print("Kontrola vstupu")
                 
                 # Check access permissions
                 pomveta = User.access_by_group(testchip, msgtopic)
                 
-                if pomveta:
-                    # Grant access
-                    self.client.publish(id_ctecka.pushopen, payload=ACCESS_ALLOWED_CODE)
-                    print(f"{id_ctecka.pushopen} - ACCESS ALLOWED")
-                    
-                    card = Card(
-                        card_number=user_chip.card_number,
-                        time=datetime.now(),
-                        id_card_reader=id_ctecka.id,
-                        id_user=user_chip.id,
-                        access=True
-                    )
-                else:
-                    # Deny access
-                    self.client.publish(id_ctecka.pushopen, payload=ACCESS_DENIED_CODE)
-                    print(f"{id_ctecka.pushopen} - ACCESS DENIED")
-                    
-                    card = Card(
-                        card_number=user_chip.card_number,
-                        time=datetime.now(),
-                        id_card_reader=id_ctecka.id,
-                        id_user=user_chip.id,
-                        access=False
-                    )
+                # Create card access log entry
+                card = Card(
+                    card_number=user_chip.card_number,
+                    time=datetime.now(),
+                    id_card_reader=id_ctecka.id,
+                    id_user=user_chip.id,
+                    access=pomveta
+                )
                 
-                # Log card access
-                self.db.add(card)
-                self.db.commit()
+                # Publish MQTT response and log in one transaction
+                try:
+                    if pomveta:
+                        # Grant access
+                        self.client.publish(id_ctecka.pushopen, payload=ACCESS_ALLOWED_CODE)
+                        print(f"{id_ctecka.pushopen} - ACCESS ALLOWED")
+                    else:
+                        # Deny access
+                        self.client.publish(id_ctecka.pushopen, payload=ACCESS_DENIED_CODE)
+                        print(f"{id_ctecka.pushopen} - ACCESS DENIED")
+                    
+                    # Log card access
+                    self.db.add(card)
+                    self.db.commit()
+                except Exception as e:
+                    print(f"Error processing access: {e}")
+                    self.db.rollback()
     
     def connect(self, host: str = None, port: int = None, keepalive: int = 60):
         """
