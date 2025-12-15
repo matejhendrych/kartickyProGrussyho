@@ -42,7 +42,7 @@ class BaseModel(object):
         def format_assignment(col, value):
             return '{}={}'.format(col.key, repr(value))
 
-        arglist = "{}".format(', '.join([format_assignment(*pair) for pair in col_dict.iteritems()]))
+        arglist = "{}".format(', '.join([format_assignment(*pair) for pair in col_dict.items()]))
         return "{}({})".format(type(self).__name__, arglist)
 
     def __str__(self):
