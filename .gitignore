@@ -20,6 +20,7 @@ src/.env
 # Logs and databases #
 *.log
 *dev.db
+*.db
 .coverage
 htmlcov/
 
