@@ -6,20 +6,20 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 from src.config import settings
 
-# Create SQLAlchemy engine
-sqlite_connect_args = {"check_same_thread": False} if settings.DATABASE_URL.startswith("sqlite") else {}
 
-engine = create_engine(
-    settings.DATABASE_URL,
-    pool_pre_ping=True,
-    echo=settings.DEBUG,
-    connect_args=sqlite_connect_args
-)
+def _build_engine():
+    db_url = str(settings.DATABASE_URL)
+    sqlite_connect_args = {"check_same_thread": False} if db_url.startswith("sqlite") else {}
+    return create_engine(
+        db_url,
+        pool_pre_ping=True,
+        echo=settings.DEBUG,
+        connect_args=sqlite_connect_args
+    )
 
-# Create SessionLocal class
+
+engine = _build_engine()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# Create Base class for models
 Base = declarative_base()
 
 

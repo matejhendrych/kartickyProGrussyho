@@ -2,9 +2,8 @@
 MQTT handler for RFID card reader communication (FastAPI version)
 Handles authentication and access control via MQTT messages
 """
-from typing import Optional
-import paho.mqtt.client as mqtt
 from datetime import datetime
+import paho.mqtt.client as mqtt
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 
@@ -13,10 +12,6 @@ from src.data.models.carddata import Card
 from src.data.models.timecard import Timecard
 from src.data.models.logdata import Log
 from src.config import settings
-
-
-# Constants
-DEFAULT_CODE = "00000000"
 ACCESS_DENIED_CODE = "0"
 ACCESS_ALLOWED_CODE = "1"
 
@@ -66,10 +61,10 @@ class MQTTHandler:
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
     
-    def on_connect(self, client, userdata, flags, rc):
+    def on_connect(self, client, userdata, flags, rc):  # pylint: disable=unused-argument
         """
         Callback when connected to MQTT broker
-        
+
         Args:
             client: MQTT client
             userdata: User data
@@ -80,10 +75,10 @@ class MQTTHandler:
         # Subscribe to all topics (can be restricted to specific patterns)
         client.subscribe('#', qos=0)
     
-    def on_message(self, client, userdata, msg):
+    def on_message(self, client, userdata, msg):  # pylint: disable=unused-argument
         """
         Callback when MQTT message is received
-        
+
         Args:
             client: MQTT client
             userdata: User data
@@ -126,7 +121,7 @@ class MQTTHandler:
                     )
                     self.db.add(log)
                     self.db.commit()
-                except Exception as e:
+                except Exception as e:  # pylint: disable=broad-exception-caught
                     print(f"Error logging unknown card: {e}")
                     self.db.rollback()
             else:
@@ -158,7 +153,7 @@ class MQTTHandler:
                     # Log card access
                     self.db.add(card)
                     self.db.commit()
-                except Exception as e:
+                except Exception as e:  # pylint: disable=broad-exception-caught
                     print(f"Error processing access: {e}")
                     self.db.rollback()
     
@@ -192,8 +187,8 @@ def start_mqtt_listener():
     """
     # Create database session
     engine = create_engine(settings.DATABASE_URL)
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    db = SessionLocal()
+    session_factory = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    db = session_factory()
     
     try:
         handler = MQTTHandler(db)

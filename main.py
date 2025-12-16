@@ -13,13 +13,12 @@ from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
-from src.database import engine, SessionLocal
-from src.data import models
+from src.database import engine, SessionLocal, Base
 from src.routers import auth, public, services
 from src.config import settings
 
 # Create database tables
-models.Base.metadata.create_all(bind=engine)
+Base.metadata.create_all(bind=engine)
 
 
 @asynccontextmanager

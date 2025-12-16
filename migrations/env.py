@@ -3,21 +3,21 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 from logging.config import fileConfig
 
-# this is the Alembic Config object, which provides
-# access to the values within the .ini file in use.
+# Alembic Config object, provides access to the values within the .ini file.
 config = context.config
 
-# Interpret the config file for Python logging.
-# This line sets up loggers basically.
+# Configure Python logging.
 fileConfig(config.config_file_name)
 
-# add your model's MetaData object here
-# for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
-from flask import current_app
-config.set_main_option('sqlalchemy.url', current_app.config.get('SQLALCHEMY_DATABASE_URI'))
-target_metadata = current_app.extensions['migrate'].db.metadata
+# FastAPI/SQLAlchemy metadata and settings
+from src.config import settings
+from src.data.models import Base as ModelsBase
+
+# Use app settings DATABASE_URL for migrations
+config.set_main_option('sqlalchemy.url', settings.DATABASE_URL)
+
+# Target metadata for 'autogenerate'
+target_metadata = ModelsBase.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
@@ -37,7 +37,12 @@ def run_migrations_offline():
 
     """
     url = config.get_main_option("sqlalchemy.url")
-    context.configure(url=url)
+    context.configure(
+        url=url,
+        target_metadata=target_metadata,
+        literal_binds=True,
+        dialect_opts={"paramstyle": "named"}
+    )
 
     with context.begin_transaction():
         context.run_migrations()
@@ -50,15 +55,18 @@ def run_migrations_online():
 
     """
     engine = engine_from_config(
-                config.get_section(config.config_ini_section),
-                prefix='sqlalchemy.',
-                poolclass=pool.NullPool)
+        config.get_section(config.config_ini_section),
+        prefix='sqlalchemy.',
+        poolclass=pool.NullPool
+    )
 
     connection = engine.connect()
     context.configure(
-                connection=connection,
-                target_metadata=target_metadata
-                )
+        connection=connection,
+        target_metadata=target_metadata,
+        compare_type=True,
+        compare_server_default=True
+    )
 
     try:
         with context.begin_transaction():

@@ -40,7 +40,6 @@ class UserInDB(UserBase):
 
 class User(UserInDB):
     """Schema for user response"""
-    pass
 
 
 # Authentication schemas
@@ -78,7 +77,6 @@ class GroupBase(BaseModel):
 
 class GroupCreate(GroupBase):
     """Schema for group creation"""
-    pass
 
 
 class GroupUpdate(GroupBase):
@@ -104,7 +102,6 @@ class TimecardBase(BaseModel):
 
 class TimecardCreate(TimecardBase):
     """Schema for timecard creation"""
-    pass
 
 
 class Timecard(TimecardBase):
@@ -126,7 +123,6 @@ class CardAccessBase(BaseModel):
 
 class CardAccessCreate(CardAccessBase):
     """Schema for card access creation"""
-    pass
 
 
 class CardAccess(CardAccessBase):

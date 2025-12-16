@@ -2,19 +2,18 @@
 Authentication router for FastAPI
 Handles user authentication, registration, and user management
 """
-from typing import List, Optional
+from typing import List
 from datetime import timedelta
-from fastapi import APIRouter, Depends, HTTPException, status, Form
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from src.database import get_db
-from src.schemas import User, UserCreate, UserUpdate, Token, LoginRequest
+from src.schemas import User, UserCreate, UserUpdate, Token
 from src.auth_utils import (
     get_password_hash,
     verify_password,
     create_access_token,
-    get_current_user,
     get_current_active_user
 )
 from src.data.models.user import User as UserModel
@@ -27,14 +26,14 @@ router = APIRouter()
 async def register(user_data: UserCreate, db: Session = Depends(get_db)):
     """
     Register a new user
-    
+
     Args:
         user_data: User registration data
         db: Database session
-        
+
     Returns:
         Created user
-        
+
     Raises:
         HTTPException: If username or email already exists
     """
@@ -78,14 +77,14 @@ async def login(
 ):
     """
     Login and get access token
-    
+
     Args:
         form_data: OAuth2 login form
         db: Database session
-        
+
     Returns:
         Access token
-        
+
     Raises:
         HTTPException: If credentials are invalid
     """
@@ -112,10 +111,10 @@ async def login(
 async def read_users_me(current_user: UserModel = Depends(get_current_active_user)):
     """
     Get current user information
-    
+
     Args:
         current_user: Current authenticated user
-        
+
     Returns:
         Current user data
     """
@@ -130,12 +129,12 @@ async def update_user_me(
 ):
     """
     Update current user information
-    
+
     Args:
         user_update: User update data
         current_user: Current authenticated user
         db: Database session
-        
+
     Returns:
         Updated user data
     """
@@ -152,10 +151,10 @@ async def update_user_me(
         current_user.chip_number = user_update.chip_number
     if user_update.password:
         current_user.password_hash = get_password_hash(user_update.password)
-    
+
     db.commit()
     db.refresh(current_user)
-    
+
     return current_user
 
 
@@ -163,18 +162,18 @@ async def update_user_me(
 async def list_users(
     skip: int = 0,
     limit: int = 100,
-    current_user: UserModel = Depends(get_current_active_user),
+    _current_user: UserModel = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
     List all users (requires authentication)
-    
+
     Args:
         skip: Number of records to skip
         limit: Maximum number of records to return
         current_user: Current authenticated user
         db: Database session
-        
+
     Returns:
         List of users
     """
@@ -185,17 +184,17 @@ async def list_users(
 @router.get("/users/{user_id}", response_model=User)
 async def get_user(
     user_id: int,
-    current_user: UserModel = Depends(get_current_active_user),
+    _current_user: UserModel = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
     Get user by ID
-    
+
     Args:
         user_id: User ID
         current_user: Current authenticated user
         db: Database session
-        
+
     Returns:
         User data
         

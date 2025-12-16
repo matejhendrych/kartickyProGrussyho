@@ -3,7 +3,6 @@ Services router for FastAPI
 Handles service endpoints like health checks
 """
 from fastapi import APIRouter, HTTPException, status
-from fastapi.responses import JSONResponse
 
 router = APIRouter()
 
