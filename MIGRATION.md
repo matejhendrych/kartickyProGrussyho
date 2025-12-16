@@ -32,7 +32,7 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 ### 2. Install Dependencies
 
 ```bash
-pip install -r requirements-new.txt
+pip install -r requirements.txt
 ```
 
 ### 3. Database Setup
@@ -118,17 +118,11 @@ python3 -c 'import os; import base64; print("APP_KEY=" + base64.b64encode(os.ura
 If migrating from existing SQLite database:
 
 ```bash
-# Export data from SQLite
-python3 scripts/export_sqlite.py dev.db > data_export.sql
-
-# Import to PostgreSQL
-psql -U karty -d karty < data_export.sql
-```
-
-Or use the migration script:
-```bash
+# Use the migration script:
 python3 scripts/migrate_db.py --from sqlite:///dev.db --to postgresql://karty:karty@localhost/karty
 ```
+
+Alternatively, export and import manually using standard tools (pg_dump, MySQL dumps, etc.).
 
 ### 6. Run Database Migrations
 

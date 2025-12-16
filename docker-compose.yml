@@ -45,6 +45,12 @@ services:
       MQTT_PORT: ${MQTT_PORT:-1883}
     command: python3 -m src.mqtt_handler
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import paho.mqtt.client as mqtt; client = mqtt.Client(); client.connect('${MQTT_BROKER:-192.168.1.110}', ${MQTT_PORT:-1883}); client.disconnect()"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
 
 volumes:
   postgres_data:

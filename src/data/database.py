@@ -2,9 +2,9 @@ import os
 from contextlib import contextmanager
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy.orm.session import Session as SQLAlchemySession
 
 from .base import Base, BaseQuery
-from ..settings import app_config
 
 class DatabaseConnection(object):
     " A database connection "
@@ -41,4 +41,5 @@ class DatabaseConnection(object):
             session.close()
 #db = DatabaseConnection(app.config['SQLALCHEMY_DATABASE_URI'])
 #db = DatabaseConnection(app_config.SQLALCHEMY_DATABASE_URI)
-db = DatabaseConnection(os.environ['DATABASE_URL'])
+from src.config import settings
+db = DatabaseConnection(settings.DATABASE_URL)

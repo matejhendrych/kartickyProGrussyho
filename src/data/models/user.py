@@ -1,16 +1,12 @@
 from typing import Optional, List, Tuple, Any
-from flask_login import UserMixin
 from sqlalchemy.schema import Column
 from sqlalchemy.types import Boolean, Integer, String
 from sqlalchemy.orm import relationship, backref, Session
 
 from sqlalchemy import cast, Numeric
 
-from ..database import db
 from ..mixins import CRUDModel
 from ..util import generate_random_token
-from ...settings import app_config
-from ...extensions import bcrypt
 from .vazby import User_has_group
 from .carddata import Card
 from .group import Group
@@ -19,7 +15,7 @@ from .timecard import Timecard
 from datetime import datetime
 import calendar
 
-class User(CRUDModel, UserMixin):
+class User(CRUDModel):
     __tablename__ = 'users'
 
     id = Column(Integer, primary_key=True)

@@ -1,59 +1,53 @@
 """
-Configures pytest and fixtures for tests in this package
+Pytest configuration and fixtures for FastAPI tests
 """
-from flask_webtest import TestApp
+import os
 import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
-from src.app import create_app
-from src.settings import TestConfig
-from src.data.database import db as _db
+# Set test environment variables before importing app
+os.environ['APP_KEY'] = 'test-secret-key-for-testing-only'
+os.environ['DATABASE_URL'] = 'sqlite:///:memory:'
+os.environ['APP_DEBUG'] = 'True'
 
-def pytest_addoption(parser):
-    """ Allows us to add --runslow as an argument to py.test so we can run tests marked slow """
-    parser.addoption("--runslow", action="store_true", help="run slow tests")
+from main import app
+from src.database import Base, get_db
 
-def pytest_runtest_setup(item):
-    """ Skip tests marked 'slow' unless we explicility asked to run them """
-    if 'slow' in item.keywords and not item.config.getoption("--runslow"):
-        pytest.skip("need --runslow option to run")
 
-@pytest.yield_fixture(scope='function')
-def app():
-    """
-    Yields a flask app instance with an active request context.
+@pytest.fixture(scope="session")
+def test_db():
+    """Create test database"""
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(bind=engine)
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    return SessionLocal()
 
-    We need to do this to get access to the request object for making HTTP requests.
-    See: http://flask.pocoo.org/docs/0.10/reqcontext/
-    """
-    _app = create_app(TestConfig)
-    ctx = _app.test_request_context()
-    ctx.push()
 
-    yield _app
+@pytest.fixture(scope="function")
+def client(test_db):
+    """FastAPI test client with dependency override for database"""
+    def override_get_db():
+        try:
+            yield test_db
+        finally:
+            pass
+    
+    app.dependency_overrides[get_db] = override_get_db
+    
+    with TestClient(app) as test_client:
+        yield test_client
+    
+    app.dependency_overrides.clear()
 
-    ctx.pop()
 
-@pytest.fixture(scope='function')
-def client(app):
-    """
-    Flask-Webtest TestApp provides convenient methods for writing high-level functional tests
+@pytest.fixture(autouse=True)
+def reset_db(test_db):
+    """Reset database before each test"""
+    # Clean up after each test
+    yield
+    for table in reversed(Base.metadata.sorted_tables):
+        test_db.execute(table.delete())
+    test_db.commit()
 
-    See:
-    http://flask-webtest.readthedocs.org/en/latest/
-    http://webtest.readthedocs.org/en/latest/
-    """
-    return TestApp(app)
-
-@pytest.yield_fixture(scope='function')
-def db():
-    """
-    Database fixture which creates/drop tables on setup/cleanup
-
-    Useful for tests that need an empty database (e.g. testing mongo imports)
-    """
-    _db.create_all()
-
-    yield _db
-
-    _db.session.remove()
-    _db.drop_all()

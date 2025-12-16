@@ -15,4 +15,5 @@ async def index(request: Request):
     """
     Home page
     """
-    return templates.TemplateResponse("index.html", {"request": request})
+    # Starlette 0.35+ expects the Request as the first argument
+    return templates.TemplateResponse(request, "index.html", {"request": request})

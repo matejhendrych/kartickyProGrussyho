@@ -1,6 +1,6 @@
 # RFID Attendance System (FastAPI)
 
-Modern RFID-based attendance tracking system built with FastAPI, PostgreSQL, and MQTT for card reader communication. Originally bootstrapped from a Flask skeleton, now fully upgraded to Python 3 and FastAPI.
+Modern RFID-based attendance tracking system built with FastAPI, SQLite/PostgreSQL, and MQTT for card reader communication. Originally bootstrapped from a Flask skeleton, now fully upgraded to Python 3 and FastAPI.
 
 ## Features
 
@@ -8,7 +8,7 @@ Modern RFID-based attendance tracking system built with FastAPI, PostgreSQL, and
 - Time-based access control and reader-to-group bindings
 - Real-time RFID validation over MQTT with full logging
 - Automated monthly attendance reports
-- PostgreSQL first (MySQL supported) via SQLAlchemy 2.0
+- SQLite by default (PostgreSQL/MySQL supported) via SQLAlchemy 2.0
 - API-first design with automatic OpenAPI documentation
 
 ## Tech Stack
@@ -27,28 +27,71 @@ Modern RFID-based attendance tracking system built with FastAPI, PostgreSQL, and
 
 ## Quick Start
 
+1. **Create and activate virtual environment:**
 ```bash
-python -m venv venv
-venv\Scripts\activate  # Windows; on Linux/macOS use source venv/bin/activate
-pip install -r requirements.txt
-copy .env.example .env  # then edit values
-alembic upgrade head
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
-python -m src.mqtt_handler  # second terminal
+python -m venv .venv
+.venv\Scripts\activate  # Windows; on Linux/macOS use: source .venv/bin/activate
 ```
 
-Full walkthrough (DB creation, secrets, tips) is in [HowToSetup.md](HowToSetup.md).
+2. **Install dependencies:**
+```bash
+pip install -r requirements.txt
+```
 
-## Installation (expanded)
+3. **Configure `.env` file (REQUIRED - APP_KEY is mandatory):**
+Copy `.env.example` to `.env` and generate a secret key:
+```bash
+# Generate APP_KEY:
+python -c "import os; import base64; print('APP_KEY=' + base64.b64encode(os.urandom(32)).decode())"
+# Copy the output and paste into .env as APP_KEY value
+```
 
-1. Clone: `git clone https://github.com/matejhendrych/karty.git && cd karty`
-2. Create and activate venv (see above).
-3. Install deps: `pip install -r requirements.txt`.
-4. Database (PostgreSQL example): create database/user and grant privileges.
-5. Configure `.env` (copy from `.env.example` if present) and generate `APP_KEY`.
-6. Run migrations: `alembic upgrade head`.
-7. Start services: `uvicorn main:app --reload ...` and `python -m src.mqtt_handler`.
-8. Open <http://localhost:8000/docs> for interactive API docs.
+4. **Run database migrations:**
+```bash
+alembic upgrade head
+```
+
+5. **Start services (two terminals needed):**
+```bash
+# Terminal 1: API server
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+
+# Terminal 2: MQTT listener
+python -m src.mqtt_handler
+```
+
+Full walkthrough is in [HowToSetup.md](HowToSetup.md).
+
+## Installation (detailed)
+
+1. **Clone:** `git clone https://github.com/matejhendrych/karty.git && cd karty`
+2. **Create and activate virtual environment:** `python -m venv .venv && source .venv/bin/activate` (Linux/macOS) or `.venv\Scripts\activate` (Windows)
+3. **Install dependencies:** `pip install -r requirements.txt`
+4. **Database configuration:**
+   - **SQLite (default):** No setup needed; database created at `./karty.db`
+   - **PostgreSQL (recommended for production):**
+     ```sql
+     CREATE DATABASE karty;
+     CREATE USER karty WITH PASSWORD 'your_password';
+     GRANT ALL PRIVILEGES ON DATABASE karty TO karty;
+     ```
+     Then set in `.env`: `DATABASE_URL=postgresql://karty:your_password@localhost/karty`
+5. **Configure `.env` file (REQUIRED):**
+   ```bash
+   cp .env.example .env
+   # Generate APP_KEY (mandatory):
+   python -c "import os; import base64; print(base64.b64encode(os.urandom(32)).decode())"
+   # Paste the output as APP_KEY value in .env
+   ```
+6. **Run database migrations:** `alembic upgrade head`
+7. **Start services (two terminals):**
+   ```bash
+   # Terminal 1:
+   uvicorn main:app --reload --host 0.0.0.0 --port 8000
+   # Terminal 2:
+   python -m src.mqtt_handler
+   ```
+8. **Open API docs:** <http://localhost:8000/docs>
 
 ## API Overview
 
@@ -85,20 +128,20 @@ Full walkthrough (DB creation, secrets, tips) is in [HowToSetup.md](HowToSetup.m
 ## Deployment
 
 - Gunicorn: `gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --access-logfile - --error-logfile -`
-- Docker: `docker build -t karty-api . && docker run -d -p 8000:8000 --env-file .env karty-api`
+- Docker: `docker compose up --build` (bundles PostgreSQL and API), or `docker build -t karty-api . && docker run -d -p 8000:8000 --env-file .env karty-api`
 - Systemd examples in [MIGRATION.md](MIGRATION.md).
 
 ## Configuration (.env)
 
-| Variable          | Description               | Default       |
-| ----------------- | ------------------------- | ------------- |
-| APP_KEY           | Secret key for JWT tokens | required      |
-| APP_DEBUG         | Enable debug mode         | False         |
-| DATABASE_URL      | Database connection URL   | required      |
-| MQTT_BROKER       | MQTT broker host          | 192.168.1.110 |
-| MQTT_PORT         | MQTT broker port          | 1883          |
-| APP_MAIL_USERNAME | SMTP username (optional)  | -             |
-| APP_MAIL_PASSWORD | SMTP password (optional)  | -             |
+| Variable          | Description               | Default                | Required |
+| ----------------- | ------------------------- | ---------------------- | -------- |
+| APP_KEY           | Secret key for JWT tokens | -                      | **YES**  |
+| APP_DEBUG         | Enable debug mode         | False                  | No       |
+| DATABASE_URL      | Database connection URL   | sqlite:///./karty.db   | No       |
+| MQTT_BROKER       | MQTT broker host          | 192.168.1.110          | No       |
+| MQTT_PORT         | MQTT broker port          | 1883                   | No       |
+| APP_MAIL_USERNAME | SMTP username (optional)  | -                      | No       |
+| APP_MAIL_PASSWORD | SMTP password (optional)  | -                      | No       |
 
 ## Project Structure
 

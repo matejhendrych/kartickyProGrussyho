@@ -3,15 +3,17 @@ Database configuration for FastAPI with PostgreSQL support
 """
 from typing import Generator
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import declarative_base, sessionmaker, Session
 from src.config import settings
 
 # Create SQLAlchemy engine
+sqlite_connect_args = {"check_same_thread": False} if settings.DATABASE_URL.startswith("sqlite") else {}
+
 engine = create_engine(
     settings.DATABASE_URL,
     pool_pre_ping=True,
-    echo=settings.DEBUG
+    echo=settings.DEBUG,
+    connect_args=sqlite_connect_args
 )
 
 # Create SessionLocal class

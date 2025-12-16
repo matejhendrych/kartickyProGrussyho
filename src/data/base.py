@@ -1,7 +1,6 @@
-from sqlalchemy.orm import Query
+from sqlalchemy.orm import Query, declarative_base
 from sqlalchemy.schema import MetaData
-from sqlalchemy.ext.declarative import declarative_base
-from datetime import date,datetime
+from datetime import date, datetime
 
 from .pagination import Pagination
 

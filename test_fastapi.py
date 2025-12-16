@@ -19,11 +19,10 @@ client = TestClient(app)
 
 
 def test_read_root():
-    """Test root endpoint"""
+    """Test root endpoint renders the landing page"""
     response = client.get("/")
     assert response.status_code == 200
-    assert "message" in response.json()
-    assert "version" in response.json()
+    assert "RFID Attendance System" in response.text
 
 
 def test_health_check():

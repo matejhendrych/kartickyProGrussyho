@@ -13,7 +13,8 @@ class Settings(BaseSettings):
     model_config = ConfigDict(
         env_file='.env',
         env_file_encoding='utf-8',
-        case_sensitive=False
+        case_sensitive=False,
+        extra='ignore'  # Ignore extra fields from .env file
     )
     
     # Application
@@ -28,7 +29,8 @@ class Settings(BaseSettings):
     
     # Database
     DATABASE_URL: str = Field(
-        default="postgresql://karty:karty@localhost/karty",
+        # Default to SQLite so no external DB install is needed
+        default="sqlite:///./karty.db",
         validation_alias='DATABASE_URL'
     )
     
